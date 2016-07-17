@@ -1,0 +1,177 @@
+<?php 
+session_start();
+$conn = mysql_connect("localhost", "root", "");
+
+      if(! $conn ){
+              die('Could not connect: ' . mysql_error());
+              }
+
+  mysql_select_db("icehrm",$conn);
+
+  // Turn off all error reporting
+  error_reporting(0);
+
+ //Employee name and ID for the select DropDown
+
+      $sqlemployee = "SELECT * FROM `employees`";
+      $resultemployee = mysql_query($sqlemployee);
+      $option ="";
+      $option .="<option value='NULL'>None</option><option name='All'>All Employees</option>";
+      while($employeeslist = mysql_fetch_array($resultemployee)){
+      $option .="<option value=".$employeeslist['id'].">".$employeeslist['first_name']." ".$employeeslist['last_name']."</option>";
+      } 
+  
+?>
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <title>Time Entry Sheet</title>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <!-- Latest compiled and minified CSS -->
+<link rel="stylesheet" href="http://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css">
+
+<!-- jQuery library -->
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.2/jquery.min.js"></script>
+
+<!-- Latest compiled JavaScript -->
+<script src="http://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/js/bootstrap.min.js"></script>
+ 
+  <script src="js/main.js"></script>
+ <!-- <script src="js/calculateDate.js"></script>
+ 
+
+<script type="text/javascript" src="js/bootstrap-datepicker.js"></script>
+<link rel="stylesheet" type="text/css" href="css/datepicker.css" />
+
+<script type="text/javascript">
+/*$(function(){
+$('#fromDate').datepicker({
+		showmin:'slidedown',
+		numberofMonths:1,
+		dateFormat: 'mm-dd-yy',
+		onClose: function(slectedDate){
+			$('#toDate').datepicker("option", "minDate", seletedDate);
+		}
+	});
+
+		$('#toDate').datepicker({
+		showmin:'slidedown',
+		numberofMonths:1,
+		dateFormat: 'mm-dd-yy',
+		onClose: function(slectedDate){
+			$('#fromDate').datepicker("option", "maxDate", seletedDate);
+		}
+	});
+});*/
+</script>-->
+
+
+
+</head>
+
+<body>
+
+<div class="container">
+<center>
+<h2>Accounts TimeSheet Report</h2>
+ <form id='myForm' class='form-horizontal' role='form' action="<?php $_SERVER['PHP_SELF'];?>" method="post">
+ <div class="row">
+	<div class="col-sm-4">&nbsp;</div>
+	<div class="col-sm-4">
+	<div class="row">
+	<div class="col-sm-6">
+		  <label>Date from: </label>
+		  <input type="date" id="fromDate" name="from" class="form-control" value="" />
+		  </div>
+		  <div class="col-sm-6">
+		  <label>Date to : </label>
+		  <input type="date" name="to" id="toDate" class="form-control" onblur="calculateDates();"value="" />
+		  </div>
+		  </div>
+
+		<br/>
+	 <label>Select Employee </label>
+	 <select class="form-control" name="employeeName" onChange="this.form.submit()">
+	 
+	 <?php echo $option;?>
+	 </select>
+	 
+	 </div>
+	<div class="col-sm-4">&nbsp;</div>
+</div>
+<br/>
+	<div class="row">
+			
+		
+		
+
+		<?php 
+		session_start();
+		if(isset($_POST['employeeName'])){
+			$_SESSION['from'] = $_POST['from'];
+			$datefrom = $_SESSION['from'];
+			$_SESSION['to'] = $_POST['to'];
+			$dateto = $_SESSION['to'];
+			
+			
+			echo $start_date =strtotime($datefrom);
+			$end_date =strtotime($dateto);
+
+			echo " <table class='table table-bordered' id='myTable'>
+					<thead>
+						<tr id='tableHead'>
+							<th>Employee Name</th>";
+			
+			for($i=$start_date;$i<=$end_date;$i+=86400){
+				$days = date('j  M',$i);
+			echo "<th>".$days."</th>";
+			}
+			
+			echo "<th>Total</th></tr></thead><tbody><tr>";
+			
+			$ep_id = $_POST['employeeName'];
+			
+			$duration = '';
+			  echo $qry = "SELECT 
+					concat(`first_name`,' ',`middle_name`,' ', `last_name`) AS eName ,
+					date_format(et.date_start,'%Y-%m-%d') as date,
+					SEC_TO_TIME(TIMESTAMPDIFF(SECOND,et.date_start,et.date_end)) as duration
+					FROM `employeetimeentry` as et
+					LEFT OUTER JOIN employees as e
+					ON e.id = et.employee
+					
+					WHERE et.employee=".$ep_id."
+					AND date_format(et.date_start,'%Y-%m-%d') >= '".$datefrom."'
+					AND date_format(date_end,'%Y-%m-%d') <= '".$dateto."'";
+			$exeqry = mysql_query($qry);
+			mysql_num_rows($exeqry);
+			while($row = mysql_fetch_assoc($exeqry)){
+				 $employee_name = $row['eName'];
+				 $employee_duration = $row['duration'];
+				 $date = $row['date'];
+				 
+				 
+				 $duration .="<td>".$employee_duration."</td>";
+				 
+			
+			}
+		}
+
+		?>
+		
+				
+		<td><?php echo $employee_name ?></td>
+			<?php echo $duration;?>
+		
+		</tr></tbody>
+		</table>
+	</div>
+ </form>
+
+	</center>
+	</div>
+	</body>
+
+	</html>
